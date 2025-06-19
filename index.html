@@ -163,7 +163,7 @@
   </style>
 </head>
 <body>  <h1>RoboRally Cards</h1>
-  <div id="selection-info">Select 3 cards. Click a selected card to clear all selections.</div>
+  <div id="selection-info"></div>
   <div id="card-container"></div>
   
   <!-- Fixed buttons at the bottom -->
@@ -191,10 +191,18 @@
         fullDeck.push({ ...cardType });
       }
     });
-    
-    const cardContainer = document.getElementById("card-container");
+      const cardContainer = document.getElementById("card-container");
     let selectedCards = [];
-    let currentHand = [];    function drawHand() {
+    let currentHand = [];
+    
+    // Get draw size and selection size from URL query parameters, or use defaults
+    const urlParams = new URLSearchParams(window.location.search);
+    const defaultDrawSize = 5;
+    const defaultSelectionSize = 3;
+    
+    // Parse query parameters with fallback to defaults
+    const drawSize = parseInt(urlParams.get('draw')) || defaultDrawSize;
+    const selectionSize = parseInt(urlParams.get('select')) || defaultSelectionSize;function drawHand() {
       cardContainer.innerHTML = "";
       selectedCards = [];
       
@@ -212,9 +220,9 @@
       document.getElementById('lockInButton').style.display = "inline-block";
       document.getElementById('lockInButton').disabled = true;
       
-      // Shuffle the full deck and draw 5 cards
+      // Shuffle the full deck and draw cards (using drawSize from query param or default)
       const shuffled = [...fullDeck].sort(() => 0.5 - Math.random());
-      currentHand = shuffled.slice(0, 5);
+      currentHand = shuffled.slice(0, drawSize);
 
       currentHand.forEach((card, index) => {        const div = document.createElement("div");
         div.className = "card";
@@ -237,9 +245,8 @@
         clearAllSelections();
         return;
       }
-      
-      // If we already have 3 cards selected, don't allow more
-      if (selectedCards.length >= 3) return;
+        // If we already have reached the selection limit, don't allow more
+      if (selectedCards.length >= selectionSize) return;
       
       // Add this card to the selected cards
       selectedCards.push(card);
@@ -272,21 +279,21 @@
       function updateSelectionInfo() {
       const selectionInfo = document.getElementById('selection-info');
       const lockInButton = document.getElementById('lockInButton');
-      
-      if (selectedCards.length === 0) {
-        selectionInfo.textContent = "Select 3 cards. Click a selected card to clear all selections.";
+        if (selectedCards.length === 0) {
+        selectionInfo.textContent = `Select ${selectionSize} cards. Click a selected card to clear all selections.`;
         lockInButton.disabled = true;
-      } else if (selectedCards.length < 3) {
-        selectionInfo.textContent = `${selectedCards.length} card(s) selected. Select ${3 - selectedCards.length} more, or click a selected card to clear selections.`;
+      } else if (selectedCards.length < selectionSize) {
+        selectionInfo.textContent = `${selectedCards.length} card(s) selected. Select ${selectionSize - selectedCards.length} more, or click a selected card to clear selections.`;
         lockInButton.disabled = true;
       } else {
-        selectionInfo.textContent = "All 3 cards selected. Click 'Lock In' to confirm or click a selected card to clear selections.";
-        lockInButton.disabled = false;      }
-    }
+        selectionInfo.textContent = `All ${selectionSize} cards selected. Click 'Lock In' to confirm or click a selected card to clear selections.`;
+        lockInButton.disabled = false;
+      }    }
       // Function to lock in the selected cards
     function lockInSelection() {
-      if (selectedCards.length !== 3) return;
-        // Get selected cards and ensure they're in selection order (1, 2, 3)
+      if (selectedCards.length !== selectionSize) return;
+      
+      // Get selected cards and ensure they're in selection order (1, 2, 3)
       const selectedElements = [];
       
       // First, gather all selected cards with their selection order
@@ -310,7 +317,9 @@
       });
       
       // Clear the container
-      cardContainer.innerHTML = '';      // Create a container for the locked-in cards
+      cardContainer.innerHTML = '';
+      
+      // Create a container for the locked-in cards
       const lockedContainer = document.createElement('div');
       lockedContainer.className = 'locked-cards';
       lockedContainer.style.display = 'flex';
@@ -318,7 +327,8 @@
       lockedContainer.style.gap = '5px'; // Reduced from 20px
       lockedContainer.style.width = '100%';
       lockedContainer.style.margin = '0 auto'; // Center the container
-        // Add the selected cards back in order
+      
+      // Add the selected cards back in order
       selectedElements.forEach((card, index) => {
         // Remove the click handler to prevent further interaction
         card.onclick = null;
@@ -326,15 +336,19 @@
         // Reset any selection-related styles but keep the number indicator
         card.classList.remove('selected');
         card.style.transform = "none";
-          // Add a nice staggered animation delay for the card
+        // Add a nice staggered animation delay for the card
         card.style.animation = `fadeIn 0.5s ${index * 0.2}s both`;
-          // No highlighting animations needed
+        // No highlighting animations needed
         lockedContainer.appendChild(card);
       });
       
-      cardContainer.appendChild(lockedContainer);      // Update UI
+      cardContainer.appendChild(lockedContainer);
+      
+      // Update UI
       const selectionInfo = document.getElementById('selection-info');
-      selectionInfo.textContent = "Your cards will be played in order: 1, 2, 3. Click 'Draw New Hand' when ready for a new turn.";
+      // Create the sequence text based on selection size (e.g., "1, 2, 3" or "1, 2, 3, 4, 5")
+      const sequence = Array.from({length: selectionSize}, (_, i) => i + 1).join(", ");
+      selectionInfo.textContent = `Your cards will be played in order: ${sequence}. Click 'Draw New Hand' when ready for a new turn.`;
       selectionInfo.style.backgroundColor = "#e8f8f0";
       selectionInfo.style.borderLeft = "5px solid #3498db";
       
@@ -343,9 +357,9 @@
       
       // Reset the scroll position
       cardContainer.scrollLeft = 0;
-    }
-    
+    }    
     // Initialize by drawing a hand
+    updateSelectionInfo(); // Ensure selection info is updated initially
     drawHand();
   </script>
 </body>

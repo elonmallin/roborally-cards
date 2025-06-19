@@ -14,36 +14,72 @@
       align-items: center;
       background: #f0f0f0;
       height: 100vh;
-    }
-
-    h1 {
+    }    h1 {
       font-size: 1.5em;
       margin: 1em 0 0.5em;
     }
-
-    #card-container, #selected-container {
+    
+    #card-container {
       display: flex;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
-      gap: 12px;
+      gap: 5px;
       padding: 10px;
       width: 100%;
       max-width: 100vw;
-      box-sizing: border-box;
-      justify-content: start;
+      box-sizing: border-box;      justify-content: start;
     }
-
+    
     .card {
       flex: 0 0 auto;
       scroll-snap-align: center;
-      transition: transform 0.2s;
+      transition: all 0.3s;
+      position: relative;
+      margin: 3px;
+      cursor: pointer;
+      border: 3px solid transparent;
+      border-radius: 3px;
     }
-
+    
+    #card-container .card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .card.selected {
+      transform: translateY(-15px);      border-color: #2ecc71;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .order-indicator {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: #2ecc71;
+      color: white;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      z-index: 1;
+      animation: bounceIn 0.3s;
+      border: 2px solid white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+    
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      70% { transform: scale(1.2); }      100% { transform: scale(1); }
+    }
+    
     .card img {
       width: 100px;
       height: auto;
       object-fit: contain;
+      display: block;
     }
 
     .card .sprite {
@@ -52,6 +88,7 @@
       background-repeat: no-repeat;
       background-size: 360% 100%;
       background-position-y: center;
+      display: block;
     }
 
     #buttons {
@@ -68,120 +105,217 @@
       color: white;
       border-radius: 6px;
       cursor: pointer;
-    }
-
-    button:disabled {
+    }    button:disabled {
       background-color: #ccc;
       cursor: not-allowed;
     }
-
-    #selected-title {
-      display: none;
-      margin-top: 20px;
+    
+    .green-button {
+      background-color: #2ecc71;
+    }
+      .green-button:hover:not(:disabled) {
+      background-color: #27ae60;
+    }    .locked-cards .card {
+      position: relative;
+      transition: transform 0.5s ease;
+      animation: fadeIn 0.5s;
+      margin: 0 10px;
+    }
+    
+    .locked-cards .order-indicator {
+      font-size: 1.2em;
+      width: 30px;
+      height: 30px;
+      border-width: 3px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
+      50% { box-shadow: 0 0 15px rgba(46, 204, 113, 0.8); }
+      100% { box-shadow: 0 0 5px rgba(46, 204, 113, 0.5); }
+    }
+    
+    #selection-info {
+      margin: 10px 0;
+      color: #555;
+      font-size: 0.9em;
+      background-color: #e8f4fc;
+      padding: 10px;
+      border-radius: 5px;
+      border-left: 5px solid #3498db;
     }
   </style>
 </head>
-<body>
-  <h1>RoboRally Cards</h1>
+<body>  <h1>RoboRally Cards</h1>
+  <div id="selection-info">Select up to 3 cards. Click a selected card to clear all selections.</div>
   <div id="card-container"></div>
-
-  <h2 id="selected-title">Selected Cards</h2>
-  <div id="selected-container"></div>
-
   <div id="buttons">
-    <button onclick="drawHand()">Draw New Hand</button>
+    <button id="drawButton" onclick="drawHand()">Draw New Hand</button>
+    <button id="lockInButton" onclick="lockInSelection()" disabled style="display:none;" class="green-button">Lock In</button>
   </div>
 
-  <script>
-    const allCards = [
-      { name: "Turn Left", image: "https://www.ultraboardgames.com/robo-rally/gfx/game83.jpg" },
-      { name: "Turn Right", image: "https://www.ultraboardgames.com/robo-rally/gfx/game82.jpg" },
-      { name: "U-Turn", image: "https://www.ultraboardgames.com/robo-rally/gfx/game84.jpg" },
-      { name: "Move Forward 1", image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 0 } },
-      { name: "Move Forward 2", image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 50 } },
-      { name: "Move Forward 3", image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 100 } },
-      { name: "Move Backward 1", image: "https://www.ultraboardgames.com/robo-rally/gfx/game85.jpg" },
-      { name: "Repeat Previous", image: "https://www.ultraboardgames.com/robo-rally/gfx/game87.jpg" }
+  <script>    // Card types with their distribution counts
+    const cardTypes = [
+      { name: "Move Forward 1", count: 5, image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 0 } },
+      { name: "Move Forward 2", count: 3, image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 50 } },
+      { name: "Move Forward 3", count: 1, image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 100 } },
+      { name: "Move Backward 1", count: 1, image: "https://www.ultraboardgames.com/robo-rally/gfx/game85.jpg" },
+      { name: "U-Turn", count: 1, image: "https://www.ultraboardgames.com/robo-rally/gfx/game84.jpg" },
+      { name: "Repeat Previous", count: 2, image: "https://www.ultraboardgames.com/robo-rally/gfx/game87.jpg" },
+      { name: "Turn Left", count: 3, image: "https://www.ultraboardgames.com/robo-rally/gfx/game83.jpg" },
+      { name: "Turn Right", count: 3, image: "https://www.ultraboardgames.com/robo-rally/gfx/game82.jpg" }
     ];
-
+    
+    // Create the full deck with the correct distribution
+    const fullDeck = [];
+    cardTypes.forEach(cardType => {
+      for (let i = 0; i < cardType.count; i++) {
+        fullDeck.push({ ...cardType });
+      }
+    });
+    
     const cardContainer = document.getElementById("card-container");
-    const selectedContainer = document.getElementById("selected-container");
-    const selectedTitle = document.getElementById("selected-title");
     let selectedCards = [];
-    let currentHand = [];
-    let selectionPhase = true;
-
-    function drawHand() {
+    let currentHand = [];    function drawHand() {
       cardContainer.innerHTML = "";
-      selectedContainer.innerHTML = "";
-      selectedTitle.style.display = "none";
       selectedCards = [];
-      selectionPhase = true;
-
-      const shuffled = allCards.sort(() => 0.5 - Math.random());
+      
+      // Reset selection info styling
+      const selectionInfo = document.getElementById('selection-info');
+      selectionInfo.style.backgroundColor = "#e8f4fc";
+      selectionInfo.style.borderLeft = "5px solid #3498db";
+      updateSelectionInfo();
+      
+      // Toggle buttons
+      document.getElementById('drawButton').style.display = "none";
+      document.getElementById('lockInButton').style.display = "inline-block";
+      document.getElementById('lockInButton').disabled = true;
+      
+      // Shuffle the full deck and draw 5 cards
+      const shuffled = [...fullDeck].sort(() => 0.5 - Math.random());
       currentHand = shuffled.slice(0, 5);
 
-      currentHand.forEach((card, index) => {
-        const div = document.createElement("div");
+      currentHand.forEach((card, index) => {        const div = document.createElement("div");
         div.className = "card";
+        div.dataset.cardName = card.name;
+        div.dataset.index = index;
+        div.title = card.name;
+        
         if (card.sprite) {
           div.innerHTML = `<div class="sprite" style="background-image: url('${card.image}'); background-position-x: ${card.sprite.x}%;"></div>`;
         } else {
           div.innerHTML = `<img src="${card.image}" alt="${card.name}">`;
-        }
-        div.onclick = () => selectCard(card);
+        }        
+        
+        div.onclick = () => toggleCardSelection(div, card);
         cardContainer.appendChild(div);
       });
-    }
-
-    function selectCard(card) {
-      if (!selectionPhase || selectedCards.length >= 3) return;
-      selectedCards.push(card);
-
-      if (selectedCards.length === 3) {
-        selectionPhase = false;
-        showSelectedCards();
+    }    function toggleCardSelection(cardElement, card) {
+      // If this card is already selected, deselect all cards
+      if (cardElement.classList.contains('selected')) {
+        clearAllSelections();
+        return;
       }
+      
+      // If we already have 3 cards selected, don't allow more
+      if (selectedCards.length >= 3) return;
+      
+      // Add this card to the selected cards
+      selectedCards.push(card);
+      cardElement.classList.add('selected');
+      
+      // Add or update order indicator
+      let orderIndicator = cardElement.querySelector('.order-indicator');
+      if (!orderIndicator) {
+        orderIndicator = document.createElement('div');
+        orderIndicator.className = 'order-indicator';
+        cardElement.appendChild(orderIndicator);
+      }
+      
+      orderIndicator.textContent = selectedCards.length; // Show the order number
+      
+      // Update selection info
+      updateSelectionInfo();
     }
-
-    function showSelectedCards() {
-      selectedTitle.style.display = "block";
-      selectedContainer.innerHTML = "";
-
-      selectedCards.forEach((card, index) => {
-        const div = document.createElement("div");
-        div.className = "card";
-        div.setAttribute("draggable", true);
-        div.dataset.index = index;
-
-        if (card.sprite) {
-          div.innerHTML = `<div class="sprite" style="background-image: url('${card.image}'); background-position-x: ${card.sprite.x}%;"></div>`;
-        } else {
-          div.innerHTML = `<img src="${card.image}" alt="${card.name}">`;
+      function clearAllSelections() {
+      selectedCards = [];
+      document.querySelectorAll('.card.selected').forEach(card => {
+        card.classList.remove('selected');
+        const indicator = card.querySelector('.order-indicator');
+        if (indicator) {
+          indicator.remove();
         }
-
-        div.addEventListener("dragstart", e => {
-          e.dataTransfer.setData("text/plain", index);
-        });
-
-        div.addEventListener("dragover", e => e.preventDefault());
-
-        div.addEventListener("drop", e => {
-          e.preventDefault();
-          const from = parseInt(e.dataTransfer.getData("text/plain"));
-          const to = parseInt(div.dataset.index);
-          if (from !== to) {
-            const temp = selectedCards[from];
-            selectedCards[from] = selectedCards[to];
-            selectedCards[to] = temp;
-            showSelectedCards();
-          }
-        });
-
-        selectedContainer.appendChild(div);
       });
+      updateSelectionInfo();
     }
-
+      function updateSelectionInfo() {
+      const selectionInfo = document.getElementById('selection-info');
+      const lockInButton = document.getElementById('lockInButton');
+      
+      if (selectedCards.length === 0) {
+        selectionInfo.textContent = "Select up to 3 cards. Click a selected card to clear all selections.";
+        lockInButton.disabled = true;
+      } else if (selectedCards.length < 3) {
+        selectionInfo.textContent = `${selectedCards.length} card(s) selected. Select ${3 - selectedCards.length} more, or click a selected card to clear selections.`;
+        lockInButton.disabled = true;
+      } else {
+        selectionInfo.textContent = "All 3 cards selected. Click 'Lock In' to confirm or click a selected card to clear selections.";
+        lockInButton.disabled = false;      }
+    }
+      // Function to lock in the selected cards
+    function lockInSelection() {
+      if (selectedCards.length !== 3) return;
+      
+      // Filter out unselected cards
+      const selectedElements = [];
+      document.querySelectorAll('.card.selected').forEach(card => {
+        // Clone the card to keep its current state
+        const clone = card.cloneNode(true);
+        selectedElements.push(clone);
+      });
+      
+      // Clear the container
+      cardContainer.innerHTML = '';      // Create a container for the locked-in cards
+      const lockedContainer = document.createElement('div');
+      lockedContainer.className = 'locked-cards';
+      lockedContainer.style.display = 'flex';
+      lockedContainer.style.justifyContent = 'center';
+      lockedContainer.style.gap = '20px';
+      lockedContainer.style.width = '100%';
+        // Add the selected cards back in order
+      selectedElements.forEach((card, index) => {
+        // Remove the click handler to prevent further interaction
+        card.onclick = null;
+        card.style.cursor = "default";
+        // Reset any selection-related styles but keep the number indicator
+        card.classList.remove('selected');
+        card.style.transform = "none";
+        
+        // Add a nice staggered animation delay for each card
+        card.style.animation = `fadeIn 0.5s ${index * 0.2}s both`;
+          // Add a subtle highlight to emphasize these are the final selections
+        card.style.animation = `fadeIn 0.5s ${index * 0.2}s both, pulseGlow 2s infinite ${index * 0.2 + 0.5}s`;
+        lockedContainer.appendChild(card);
+      });
+      
+      cardContainer.appendChild(lockedContainer);
+        // Update UI
+      const selectionInfo = document.getElementById('selection-info');
+      selectionInfo.textContent = "Your selected cards in play order. Click 'Draw New Hand' when ready for a new turn.";
+      selectionInfo.style.backgroundColor = "#e8f8f0";
+      selectionInfo.style.borderLeft = "5px solid #2ecc71";
+      
+      document.getElementById('lockInButton').style.display = "none";
+      document.getElementById('drawButton').style.display = "inline-block";
+    }
+    
+    // Initialize by drawing a hand
     drawHand();
   </script>
 </body>

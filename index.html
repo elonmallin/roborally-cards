@@ -133,30 +133,23 @@
       margin: 0 2px; /* Reduced from 10px */
       transform: none; /* Reset any transform when locked in */
     }
-    
-    .locked-cards .card img,
-    .locked-cards .card .sprite {
-      outline: 2px solid #2ecc71;
-      outline-offset: 0;
-    }
-    
-    .locked-cards .order-indicator {
+      /* Remove highlighting from locked-in cards */
+      .locked-cards .order-indicator {
       font-size: 1.2em;
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       border-width: 3px;
       box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+      background-color: #3498db; /* Change to blue for better visibility */
+      top: -10px;
+      right: -10px;
+      z-index: 20;
     }
     
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-      @keyframes pulseGlow {
-      0% { outline: 2px solid rgba(46, 204, 113, 0.7); filter: drop-shadow(0 0 3px rgba(46, 204, 113, 0.5)); }
-      50% { outline: 3px solid rgba(46, 204, 113, 1); filter: drop-shadow(0 0 8px rgba(46, 204, 113, 0.8)); }
-      100% { outline: 2px solid rgba(46, 204, 113, 0.7); filter: drop-shadow(0 0 3px rgba(46, 204, 113, 0.5)); }
-    }
+    }      /* No pulse glow animation needed */
     
     #selection-info {
       margin: 10px 0;
@@ -293,13 +286,27 @@
       // Function to lock in the selected cards
     function lockInSelection() {
       if (selectedCards.length !== 3) return;
-      
-      // Filter out unselected cards
+        // Get selected cards and ensure they're in selection order (1, 2, 3)
       const selectedElements = [];
+      
+      // First, gather all selected cards with their selection order
+      const orderedCards = [];
       document.querySelectorAll('.card.selected').forEach(card => {
-        // Clone the card to keep its current state
-        const clone = card.cloneNode(true);
-        selectedElements.push(clone);
+        const orderIndicator = card.querySelector('.order-indicator');
+        if (orderIndicator) {
+          const order = parseInt(orderIndicator.textContent);
+          // Clone the card to keep its current state
+          const clone = card.cloneNode(true);
+          orderedCards.push({ order: order, element: clone });
+        }
+      });
+      
+      // Sort cards by their selection order (1, 2, 3)
+      orderedCards.sort((a, b) => a.order - b.order);
+      
+      // Extract just the elements in the correct order
+      orderedCards.forEach(item => {
+        selectedElements.push(item.element);
       });
       
       // Clear the container
@@ -321,24 +328,15 @@
         card.style.transform = "none";
           // Add a nice staggered animation delay for the card
         card.style.animation = `fadeIn 0.5s ${index * 0.2}s both`;
-        
-        // Apply the pulse glow animation to the image or sprite inside the card
-        const imgElement = card.querySelector('img');
-        const spriteElement = card.querySelector('.sprite');
-        
-        if (imgElement) {
-          imgElement.style.animation = `pulseGlow 2s infinite ${index * 0.2 + 0.5}s`;
-        } else if (spriteElement) {
-          spriteElement.style.animation = `pulseGlow 2s infinite ${index * 0.2 + 0.5}s`;
-        }
+          // No highlighting animations needed
         lockedContainer.appendChild(card);
       });
       
       cardContainer.appendChild(lockedContainer);      // Update UI
       const selectionInfo = document.getElementById('selection-info');
-      selectionInfo.textContent = "Your selected cards in play order. Click 'Draw New Hand' when ready for a new turn.";
+      selectionInfo.textContent = "Your cards will be played in order: 1, 2, 3. Click 'Draw New Hand' when ready for a new turn.";
       selectionInfo.style.backgroundColor = "#e8f8f0";
-      selectionInfo.style.borderLeft = "5px solid #2ecc71";
+      selectionInfo.style.borderLeft = "5px solid #3498db";
       
       document.getElementById('lockInButton').style.display = "none";
       document.getElementById('drawButton').style.display = "inline-block";

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoboRally Card Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f0f0f0;
+      height: 100vh;
+    }
+
+    h1 {
+      font-size: 1.5em;
+      margin: 1em 0 0.5em;
+    }
+
+    #card-container, #selected-container {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      gap: 12px;
+      padding: 10px;
+      width: 100%;
+      max-width: 100vw;
+      box-sizing: border-box;
+      justify-content: start;
+    }
+
+    .card {
+      flex: 0 0 auto;
+      scroll-snap-align: center;
+      transition: transform 0.2s;
+    }
+
+    .card img {
+      width: 100px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .card .sprite {
+      width: 100px;
+      height: 140px;
+      background-repeat: no-repeat;
+      background-size: 360% 100%;
+      background-position-y: center;
+    }
+
+    #buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      font-size: 1em;
+      padding: 10px 20px;
+      border: none;
+      background-color: #3498db;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    #selected-title {
+      display: none;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>RoboRally Cards</h1>
+  <div id="card-container"></div>
+
+  <h2 id="selected-title">Selected Cards</h2>
+  <div id="selected-container"></div>
+
+  <div id="buttons">
+    <button onclick="drawHand()">Draw New Hand</button>
+  </div>
+
+  <script>
+    const allCards = [
+      { name: "Turn Left", image: "https://www.ultraboardgames.com/robo-rally/gfx/game83.jpg" },
+      { name: "Turn Right", image: "https://www.ultraboardgames.com/robo-rally/gfx/game82.jpg" },
+      { name: "U-Turn", image: "https://www.ultraboardgames.com/robo-rally/gfx/game84.jpg" },
+      { name: "Move Forward 1", image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 0 } },
+      { name: "Move Forward 2", image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 50 } },
+      { name: "Move Forward 3", image: "https://www.ultraboardgames.com/robo-rally/gfx/game79.jpg", sprite: { x: 100 } },
+      { name: "Move Backward 1", image: "https://www.ultraboardgames.com/robo-rally/gfx/game85.jpg" },
+      { name: "Repeat Previous", image: "https://www.ultraboardgames.com/robo-rally/gfx/game87.jpg" }
+    ];
+
+    const cardContainer = document.getElementById("card-container");
+    const selectedContainer = document.getElementById("selected-container");
+    const selectedTitle = document.getElementById("selected-title");
+    let selectedCards = [];
+    let currentHand = [];
+    let selectionPhase = true;
+
+    function drawHand() {
+      cardContainer.innerHTML = "";
+      selectedContainer.innerHTML = "";
+      selectedTitle.style.display = "none";
+      selectedCards = [];
+      selectionPhase = true;
+
+      const shuffled = allCards.sort(() => 0.5 - Math.random());
+      currentHand = shuffled.slice(0, 5);
+
+      currentHand.forEach((card, index) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        if (card.sprite) {
+          div.innerHTML = `<div class="sprite" style="background-image: url('${card.image}'); background-position-x: ${card.sprite.x}%;"></div>`;
+        } else {
+          div.innerHTML = `<img src="${card.image}" alt="${card.name}">`;
+        }
+        div.onclick = () => selectCard(card);
+        cardContainer.appendChild(div);
+      });
+    }
+
+    function selectCard(card) {
+      if (!selectionPhase || selectedCards.length >= 3) return;
+      selectedCards.push(card);
+
+      if (selectedCards.length === 3) {
+        selectionPhase = false;
+        showSelectedCards();
+      }
+    }
+
+    function showSelectedCards() {
+      selectedTitle.style.display = "block";
+      selectedContainer.innerHTML = "";
+
+      selectedCards.forEach((card, index) => {
+        const div = document.createElement("div");
+        div.className = "card";
+        div.setAttribute("draggable", true);
+        div.dataset.index = index;
+
+        if (card.sprite) {
+          div.innerHTML = `<div class="sprite" style="background-image: url('${card.image}'); background-position-x: ${card.sprite.x}%;"></div>`;
+        } else {
+          div.innerHTML = `<img src="${card.image}" alt="${card.name}">`;
+        }
+
+        div.addEventListener("dragstart", e => {
+          e.dataTransfer.setData("text/plain", index);
+        });
+
+        div.addEventListener("dragover", e => e.preventDefault());
+
+        div.addEventListener("drop", e => {
+          e.preventDefault();
+          const from = parseInt(e.dataTransfer.getData("text/plain"));
+          const to = parseInt(div.dataset.index);
+          if (from !== to) {
+            const temp = selectedCards[from];
+            selectedCards[from] = selectedCards[to];
+            selectedCards[to] = temp;
+            showSelectedCards();
+          }
+        });
+
+        selectedContainer.appendChild(div);
+      });
+    }
+
+    drawHand();
+  </script>
+</body>
+</html>

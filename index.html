@@ -1,24 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>RoboRally Card Generator</title>  <style>    html, body {
       height: 100%;
-      overflow: auto;
+      overflow: hidden; /* Prevent any scrolling by default */
     }
     
     body {
       font-family: sans-serif;
       margin: 0;
       padding: 0;
-      padding-bottom: 80px; /* Add space for the fixed buttons at bottom */
+      padding-bottom: 0; /* Remove bottom padding */
       display: flex;
       flex-direction: column;
       align-items: center;
       background: #f0f0f0;
-      min-height: 100vh;
-      overscroll-behavior: none; /* Prevents bounce scrolling on mobile */
+      height: 100%; /* Use exact height instead of min-height */
+      overscroll-behavior: none;
+      position: relative; /* For proper positioning of children */
+    }
+    
+    /* Create a main content container that can scroll if needed */
+    .content-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      flex: 1;
+      overflow-y: auto; /* Only this container can scroll */
+      padding-bottom: 80px; /* Space for buttons */
     }h1 {
       font-size: 1.5em;
       margin: 1em 0 0.5em;
@@ -32,9 +43,9 @@
       padding: 25px 10px 20px; /* Added extra padding on top for raised cards */
       width: 100%;
       max-width: 100vw;
-      min-height: 200px;
       box-sizing: border-box;
       justify-content: start;
+      flex-shrink: 0;
     }
       .card {
       flex: 0 0 auto;
@@ -97,9 +108,8 @@
       height: 140px;
       background-repeat: no-repeat;
       background-size: 360% 100%;
-      background-position-y: center;
-      display: block;    }    #buttons {
-      position: fixed;
+      background-position-y: center;      display: block;    }    #buttons {
+      position: absolute;
       bottom: 20px;
       left: 0;
       right: 0;
@@ -107,7 +117,7 @@
       justify-content: center;
       gap: 10px;
       padding: 10px;
-      z-index: 100;    }    button {
+      z-index: 100;    }button {
       font-size: 1.1em;
       padding: 12px 24px;
       border: none;
@@ -171,10 +181,9 @@
       border-radius: 5px;
       border-left: 5px solid #3498db;
     }
-    
-    /* Media queries for better mobile experience */
+      /* Media queries for better mobile experience */
     @media (max-height: 600px) {
-      body {
+      .content-container {
         padding-bottom: 70px;
       }
       
@@ -201,9 +210,12 @@
     }
   </style>
 </head>
-<body>  <h1>RoboRally Cards</h1>
-  <div id="selection-info"></div>
-  <div id="card-container"></div>
+<body>
+  <div class="content-container">
+    <h1>RoboRally Cards</h1>
+    <div id="selection-info"></div>
+    <div id="card-container"></div>
+  </div>
   
   <!-- Fixed buttons at the bottom -->
   <div id="buttons">

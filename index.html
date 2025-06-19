@@ -66,11 +66,11 @@
       transform: translateY(-15px);
       filter: drop-shadow(0 6px 8px rgba(46, 204, 113, 0.8));
     }
-    
-    .card.selected img, 
+      .card.selected img, 
     .card.selected .sprite {
-      outline: 2px solid #2ecc71;
-      outline-offset: 0;
+      border: 2px solid #2ecc71;
+      border-radius: 8px;
+      box-sizing: border-box;
     }
       .order-indicator {
       position: absolute;
@@ -95,20 +95,19 @@
       0% { transform: scale(0); }
       70% { transform: scale(1.2); }      100% { transform: scale(1); }
     }
-    
-    .card img {
+      .card img {
       width: 100px;
       height: auto;
       object-fit: contain;
       display: block;
-    }
-
-    .card .sprite {
+      border-radius: 6px; /* Added border radius */
+    }    .card .sprite {
       width: 100px;
       height: 140px;
       background-repeat: no-repeat;
-      background-size: 360% 100%;
-      background-position-y: center;      display: block;    }    #buttons {
+      background-size: 320% 100%;
+      background-position-y: center;
+      border-radius: 6px; /* Added border radius */display: block;    }    #buttons {
       position: absolute;
       bottom: 20px;
       left: 0;
